@@ -13,10 +13,16 @@ func generateNumbers(size int, out chan<- int) {
 	close(out) 
 }
 
-func filter(in <- chan int, out chan<- int) {
+func filterAndMap(in <- chan int, out chan<- int) {
 	for i := range in {
 		if i % 2 == 0  {
-			out <- i;
+			val := i;
+
+			for j := 1; j < i*i; j++ {
+				val += j;
+			}
+
+			out <- val;
 		}
 	}
 	close(out)
@@ -38,7 +44,7 @@ func pipeline(size int) int {
 	res := make(chan int)
 	
 	go generateNumbers(size, gen)
-	go filter(gen, fil)
+	go filterAndMap(gen, fil)
 	go sum(fil, res)
 
 	return <-res
@@ -48,7 +54,13 @@ func sequenece(size int) int {
 	sum := 0
 	for i := 1; i <= size; i++ {
 		if i % 2 == 0 {
-			sum += i;
+			val := i;
+		
+			for j := 1; j < i*i; j++ {
+				val += j;
+			}
+
+			sum += val;
 		}
 	}
 	return sum;
@@ -56,15 +68,15 @@ func sequenece(size int) int {
 
 func main() {
 	start := time.Now() 
-	res1 := pipeline(100_000)
+	res1 := pipeline(1000)
 	duration := time.Since(start)
 
 	fmt.Println("Pipeline")
 	fmt.Println("Res:", res1)
 	fmt.Println("Duration:", duration)
-
+	// -------------------------------
 	start = time.Now()
-	res2 := sequenece(100_000)
+	res2 := sequenece(1000)
 	duration = time.Since(start)
 
 	fmt.Println("Sequence")
