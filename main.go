@@ -48,7 +48,7 @@ func pipeline(size int) int {
 	go generateNumbers(size, gen)
 
 	var wg sync.WaitGroup
-	for range 10 {
+	for range 5 {
 		wg.Add(1)
 		go filterAndMap(gen, fil, &wg)
 	}
