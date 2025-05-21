@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
+	"sync"
 )
 
 
@@ -13,7 +14,9 @@ func generateNumbers(size int, out chan<- int) {
 	close(out) 
 }
 
-func filterAndMap(in <- chan int, out chan<- int) {
+func filterAndMap(in <- chan int, out chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	for i := range in {
 		if i % 2 == 0  {
 			val := i;
@@ -25,7 +28,6 @@ func filterAndMap(in <- chan int, out chan<- int) {
 			out <- val;
 		}
 	}
-	close(out)
 }
 
 func sum(in <- chan int, out chan<- int) {
@@ -44,7 +46,18 @@ func pipeline(size int) int {
 	res := make(chan int)
 	
 	go generateNumbers(size, gen)
-	go filterAndMap(gen, fil)
+
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Add(1)
+		go filterAndMap(gen, fil, &wg)
+	}
+
+	go func() {
+		wg.Wait()
+		close(fil)
+	}()
+	
 	go sum(fil, res)
 
 	return <-res
@@ -68,7 +81,7 @@ func sequenece(size int) int {
 
 func main() {
 	start := time.Now() 
-	res1 := pipeline(1000)
+	res1 := pipeline(3000)
 	duration := time.Since(start)
 
 	fmt.Println("Pipeline")
@@ -76,7 +89,7 @@ func main() {
 	fmt.Println("Duration:", duration)
 	// -------------------------------
 	start = time.Now()
-	res2 := sequenece(1000)
+	res2 := sequenece(3000)
 	duration = time.Since(start)
 
 	fmt.Println("Sequence")
